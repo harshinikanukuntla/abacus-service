@@ -1,0 +1,46 @@
+# 3 stateless app nodes sharing one Redis instance as the single source
+# of truth for the running sum.
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  node1:
+    build: .
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - NODE_ID=node1
+    ports:
+      - "8001:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  node2:
+    build: .
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - NODE_ID=node2
+    ports:
+      - "8002:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  node3:
+    build: .
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - NODE_ID=node3
+    ports:
+      - "8003:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
